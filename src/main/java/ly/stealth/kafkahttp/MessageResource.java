@@ -1,7 +1,7 @@
 package ly.stealth.kafkahttp;
 
 import com.google.common.base.Strings;
-import com.yammer.metrics.annotation.Timed;
+import com.codahale.metrics.annotation.Timed;
 import kafka.consumer.Consumer;
 import kafka.consumer.ConsumerConfig;
 import kafka.consumer.ConsumerTimeoutException;

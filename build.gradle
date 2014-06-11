@@ -1,0 +1,68 @@
+apply plugin: 'java'
+apply plugin: 'gradle-one-jar'
+apply plugin: 'application'
+
+// Use Java 7 by default
+sourceCompatibility = '1.7'
+targetCompatibility = '1.7'
+
+// UTF-8 should be standard by now. So use it!
+[compileJava, compileTestJava]*.options*.encoding = 'UTF-8'
+
+// The main class of the application
+mainClassName = 'ly.stealth.kafkahttp.KafkaApplication'
+
+// Add Gradle OneJar Plugin, see https://github.com/rholder/gradle-one-jar
+buildscript {
+    repositories {
+        mavenCentral()
+    }
+
+    dependencies {
+        classpath 'com.github.rholder:gradle-one-jar:1.0.3'
+    }
+}
+
+// Set our project variables
+project.ext {
+    dropwizardVersion = '0.7.0'
+    kafkaVersion = '0.8.1.1'
+    jettyVersion = '9.0.7.v20131107'
+}
+
+repositories {
+    mavenCentral()
+}
+
+dependencies {
+    compile (
+       'io.dropwizard:dropwizard-core:' + dropwizardVersion,
+       'io.dropwizard:dropwizard-configuration:' + dropwizardVersion,
+       'org.eclipse.jetty:jetty-servlets:' + jettyVersion
+    )
+    compile('org.apache.kafka:kafka_2.9.2:' + kafkaVersion) {
+        //excluding a particular transitive dependency:
+        exclude module: 'jmxri' //by artifact name
+        exclude module: 'jmxtools' //by artifact name
+        exclude module: 'jms' //by artifact name
+    }
+}
+
+// Configure the oneJar task
+task oneJar(type: OneJar) {
+    mainClass = mainClassName
+}
+
+// Configure the run task to start the Dropwizard service
+run {
+    args 'server', './kafka-http.yml'
+
+}
+
+task wrapper(type: Wrapper) {
+    gradleVersion = '1.12'
+}
+
+artifacts {
+    oneJar
+}

@@ -1,23 +1,29 @@
 package ly.stealth.kafkahttp;
 
-import com.yammer.dropwizard.Service;
-import com.yammer.dropwizard.config.Bootstrap;
-import com.yammer.dropwizard.config.Environment;
-import com.yammer.dropwizard.lifecycle.Managed;
-import com.yammer.metrics.core.HealthCheck;
+import io.dropwizard.Application;
+import io.dropwizard.setup.Bootstrap;
+import io.dropwizard.setup.Environment;
+import io.dropwizard.lifecycle.Managed;
+import com.codahale.metrics.health.HealthCheck;
 import kafka.javaapi.producer.Producer;
 import kafka.producer.ProducerConfig;
+import org.eclipse.jetty.servlets.CrossOriginFilter;
 
-public class KafkaService extends Service<KafkaConfiguration> implements Managed {
+public class KafkaApplication extends Application<KafkaConfiguration> implements Managed {
     public static void main(String[] args) throws Exception {
-        new KafkaService().run(args);
+        new KafkaApplication().run(args);
     }
 
     private Producer<String, String> producer;
 
     @Override
+    public String getName() {
+        return "kafka-http";
+    }
+
+    @Override
     public void initialize(Bootstrap<KafkaConfiguration> bootstrap) {
-        bootstrap.setName("kafka-http");
+
     }
 
     @Override
@@ -25,9 +31,12 @@ public class KafkaService extends Service<KafkaConfiguration> implements Managed
         ProducerConfig config = new ProducerConfig(configuration.producer.asProperties());
         producer = new Producer<String, String>(config);
 
-        environment.manage(this);
-        environment.addResource(new MessageResource(producer, configuration.consumer));
-        environment.addHealthCheck(new EmptyHealthCheck());
+        // Open to Cross-Domain requests
+        environment.servlets().addFilter("/*", CrossOriginFilter.class);
+
+        environment.lifecycle().manage(this);
+        environment.jersey().register(new MessageResource(producer, configuration.consumer));
+        environment.healthChecks().register("empty", new EmptyHealthCheck());
     }
 
     @Override
@@ -42,7 +51,7 @@ public class KafkaService extends Service<KafkaConfiguration> implements Managed
 
     private static class EmptyHealthCheck extends HealthCheck {
         public EmptyHealthCheck() {
-            super("empty");
+            //super("empty");
         }
 
         @Override
